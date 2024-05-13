@@ -139,6 +139,7 @@ struct HfCandidateSelectorD0 {
   Configurable<double> nSigmaTpc{"nSigmaTpc", 3., "Nsigma cut on TPC only"};
   // topological cuts
   Configurable<double> cpaMin{"cpaMin", 0.98, "Min. cosine of pointing angle"};
+  Configurable<double> dlenMin{"dlenMin", 0.01, " Min. decay length"}; //Exercise 1
   Configurable<double> massWindow{"massWindow", 0.4, "Half-width of the invariant-mass window"};
 
   HfHelper hfHelper;
@@ -170,6 +171,12 @@ struct HfCandidateSelectorD0 {
     if (candidate.cpa() < cpaMin) {
       return false;
     }
+    // decay length - Exercise 1
+    if (candidate.decayLength() < dlenMin){
+      return false;
+    }
+
+
     return true;
   }
 
@@ -279,7 +286,10 @@ struct HfTaskD0 {
 
   HfHelper hfHelper;
 
-  Partition<soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar;
+  //Partition<soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar;
+  //Exercise 3
+  Filter filterD0candidates = aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar;
+
 
   HistogramRegistry registry{
     "registry",
@@ -290,14 +300,35 @@ struct HfTaskD0 {
     const TString strTitle = "D^{0} candidates";
     const TString strPt = "#it{p}_{T} (GeV/#it{c})";
     const TString strEntries = "entries";
+
+    AxisSpec ptAxis = {100,0.,10.}; //Exercise 1
+
     registry.add("hPtCand", strTitle + ";" + strPt + ";" + strEntries, {HistType::kTH1F, {{100, 0., 10.}}});
     registry.add("hMass", strTitle + ";" + "inv. mass (#pi K) (GeV/#it{c}^{2})" + ";" + strEntries, {HistType::kTH1F, {{500, 0., 5.}}});
     registry.add("hCpaVsPtCand", strTitle + ";" + "cosine of pointing angle" + ";" + strPt + ";" + strEntries, {HistType::kTH2F, {{110, -1.1, 1.1}, {100, 0., 10.}}});
+    //Exercise 1
+    registry.add("hDlenVsPtCand", strTitle + ";" + "decay length" + ";" + strPt + ";" + strEntries, {HistType::kTH2F, {{150, 0., 0.1}, {ptAxis}}});
+    //Exercise 2
+    registry.add("hDlenXYVsPtCand", strTitle + ";" + "decay length XY" + ";" + strPt + ";" + strEntries, {HistType::kTH2F, {{150, 0., 0.1}, {ptAxis}}});
+    // Exercise 4
+    registry.add("hNTracks", strTitle + ";" + "N. of tracks" + ";" + strPt + ";" + strEntries, {HistType::kTH1F, {{800, 0., 800.}}});
+    registry.add("hNCand", strTitle + ";" + "N. of candidates" + ";" + strPt + ";" + strEntries, {HistType::kTH1F, {{5, 0., 5.}}});
   }
 
-  void process(soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0> const& candidates)
-  {
-    for (const auto& candidate : selectedD0Candidates) {
+  //void process(soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0> const& candidates)
+  // Exercise 3
+  //void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0>> const& candidates)
+  // Exercise 4
+  void process(aod::Collision const& collision, aod::Tracks const& tracks, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0>> const& candidates)
+  { 
+
+    // Exercise 4
+    registry.fill(HIST("hNTracks"), tracks.size());
+    registry.fill(HIST("hNCand"), candidates.size());
+
+    //for (const auto& candidate : selectedD0Candidates) {
+    //Exercise 3
+    for (const auto& candidate : candidates) {
       if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate));
       }
@@ -306,6 +337,10 @@ struct HfTaskD0 {
       }
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hCpaVsPtCand"), candidate.cpa(), candidate.pt());
+      //Exercise 1
+      registry.fill(HIST("hDlenVsPtCand"), candidate.decayLength(), candidate.pt());
+      //Exercise 2
+      registry.fill(HIST("hDlenXYVsPtCand"), candidate.decayLengthXY(), candidate.pt());
     }
   }
 };
