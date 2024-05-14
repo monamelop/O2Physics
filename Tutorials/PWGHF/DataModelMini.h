@@ -69,10 +69,13 @@ DECLARE_SOA_DYNAMIC_COLUMN(PtProng1, ptProng1, //! pt of prong 1
 // candidate properties
 DECLARE_SOA_DYNAMIC_COLUMN(DecayLength, decayLength, //! decay length of candidate
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS) -> float { return RecoDecay::distance(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}); });
+<<<<<<< HEAD
 //Exercise 2
 DECLARE_SOA_DYNAMIC_COLUMN(DecayLengthXY, decayLengthXY, //! decay length XY of candidate
                            [](float xVtxP, float yVtxP, float xVtxS, float yVtxS) -> float { return RecoDecay::distance(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}); });
 
+=======
+>>>>>>> 5ccb47ec9f95ba3eb347fd7d17cef9e447e5ad6c
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! pt of candidate
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //! px of candidate
@@ -94,7 +97,10 @@ DECLARE_SOA_TABLE(HfCandProng2Base, "AOD", "HFCANDP2BASE", //! 2-prong candidate
                   hf_cand_prong2::XSecondaryVertex, hf_cand_prong2::YSecondaryVertex, hf_cand_prong2::ZSecondaryVertex,
                   /* dynamic columns */ hf_cand_prong2::RSecondaryVertex<hf_cand_prong2::XSecondaryVertex, hf_cand_prong2::YSecondaryVertex>,
                   hf_cand_prong2::DecayLength<collision::PosX, collision::PosY, collision::PosZ, hf_cand_prong2::XSecondaryVertex, hf_cand_prong2::YSecondaryVertex, hf_cand_prong2::ZSecondaryVertex>,
+<<<<<<< HEAD
                   hf_cand_prong2::DecayLengthXY<collision::PosX, collision::PosY, hf_cand_prong2::XSecondaryVertex, hf_cand_prong2::YSecondaryVertex>, 
+=======
+>>>>>>> 5ccb47ec9f95ba3eb347fd7d17cef9e447e5ad6c
                   /* prong 0 */ hf_cand_prong2::PtProng0<hf_cand_prong2::PxProng0, hf_cand_prong2::PyProng0>,
                   hf_cand_prong2::PxProng0, hf_cand_prong2::PyProng0, hf_cand_prong2::PzProng0,
                   /* prong 1 */ hf_cand_prong2::PtProng1<hf_cand_prong2::PxProng1, hf_cand_prong2::PyProng1>,

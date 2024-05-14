@@ -34,7 +34,10 @@ OPTIONS="-b --configuration json://$JSON --aod-memory-rate-limit 2000000000 --sh
 # shellcheck disable=SC2086 # Ignore unquoted options.
 o2-analysistutorial-hf-task-mini $OPTIONS | \
 o2-analysis-timestamp $OPTIONS | \
+<<<<<<< HEAD
 o2-analysis-multiplicity-table $OPTIONS | \
+=======
+>>>>>>> 5ccb47ec9f95ba3eb347fd7d17cef9e447e5ad6c
 o2-analysis-track-propagation $OPTIONS | \
 o2-analysis-event-selection $OPTIONS | \
 o2-analysis-pid-tpc-base $OPTIONS | \
