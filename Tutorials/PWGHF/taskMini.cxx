@@ -193,7 +193,7 @@ struct HfCandidateSelectorD0 {
   /// \note trackPion = positive and trackKaon = negative for D0 selection and inverse for D0bar
   /// \return true if candidate passes all cuts for the given conjugate
   template <typename T1, typename T2>
-  bool selectionTopolConjugate(const T1& candidate, const T2& trackPion, const T2& trackKaon)
+  bool selectionTopolConjugate(const T1& candidate, const T2& trackPion, const T2& /*trackKaon*/)
   {
     // invariant-mass cut
     if (trackPion.sign() > 0) {
@@ -346,7 +346,7 @@ struct HfTaskD0 {
     registry.add("hCpaVsPtCand", strTitle + ";" + "cosine of pointing angle" + ";" + strPt + ";" + strEntries, {HistType::kTH2F, {{110, -1.1, 1.1}, {100, 0., 10.}}});
   }
 
-  void process(soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0> const& candidates)
+  void process(soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0> const& /*candidates*/)
   {
     for (const auto& candidate : selectedD0Candidates) {
 >>>>>>> 5ccb47ec9f95ba3eb347fd7d17cef9e447e5ad6c

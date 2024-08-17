@@ -9,6 +9,11 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+o2physics_add_dpl_workflow(task-charm-hadrons-femto-dream
+                    SOURCES taskCharmHadronsFemtoDream.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-correlation-d0-hadrons
                     SOURCES taskCorrelationD0Hadrons.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -24,11 +29,6 @@ o2physics_add_dpl_workflow(task-correlation-d-meson-pairs
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(task-correlation-d-meson-pairs-testing
-                    SOURCES taskCorrelationDMesonPairsTesting.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(task-correlation-dplus-hadrons
                     SOURCES taskCorrelationDplusHadrons.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -36,6 +36,11 @@ o2physics_add_dpl_workflow(task-correlation-dplus-hadrons
 
 o2physics_add_dpl_workflow(task-correlation-ds-hadrons
                     SOURCES taskCorrelationDsHadrons.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-correlation-dstar-hadrons
+                    SOURCES taskCorrelationDstarHadrons.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

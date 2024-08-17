@@ -13,6 +13,7 @@
 /// \brief Jet tagging related utilities
 ///
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
+/// \author Hanseo Park <hanseo.park@cern.ch>
 
 #ifndef PWGJE_CORE_JETTAGGINGUTILITIES_H_
 #define PWGJE_CORE_JETTAGGINGUTILITIES_H_
@@ -22,9 +23,14 @@
 #include <numeric>
 #include <tuple>
 #include <vector>
+#include <algorithm>
+#include <functional>
+#include <memory>
 
+#include "TF1.h"
 #include "Framework/Logger.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 
 enum JetTaggingSpecies {
@@ -103,7 +109,7 @@ int getOriginalHFMotherIndex(const typename T::iterator& hfparticle)
  * @param hftrack track passed as reference which is then replaced by the first track that originated from an HF shower
  */
 template <typename T, typename U, typename V>
-int jetTrackFromHFShower(T const& jet, U const& tracks, V const& particles, typename U::iterator& hftrack)
+int jetTrackFromHFShower(T const& jet, U const& /*tracks*/, V const& particles, typename U::iterator& hftrack, bool searchUpToQuark)
 {
 
   bool hasMcParticle = false;
@@ -114,7 +120,7 @@ int jetTrackFromHFShower(T const& jet, U const& tracks, V const& particles, type
     }
     hasMcParticle = true;
     auto const& particle = track.template mcParticle_as<V>();
-    origin = RecoDecay::getCharmHadronOrigin(particles, particle, true);
+    origin = RecoDecay::getCharmHadronOrigin(particles, particle, searchUpToQuark);
     if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
       hftrack = track;
       if (origin == 1) {
@@ -140,12 +146,12 @@ int jetTrackFromHFShower(T const& jet, U const& tracks, V const& particles, type
  * @param hfparticle particle passed as reference which is then replaced by the first track that originated from an HF shower
  */
 template <typename T, typename U>
-int jetParticleFromHFShower(T const& jet, U const& particles, typename U::iterator& hfparticle)
+int jetParticleFromHFShower(T const& jet, U const& particles, typename U::iterator& hfparticle, bool searchUpToQuark)
 {
 
   int origin = -1;
-  for (auto& particle : jet.template tracks_as<U>()) {
-    origin = RecoDecay::getCharmHadronOrigin(particles, particle, true);
+  for (const auto& particle : jet.template tracks_as<U>()) {
+    origin = RecoDecay::getCharmHadronOrigin(particles, particle, searchUpToQuark);
     if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
       hfparticle = particle;
       if (origin == 1) {
@@ -168,11 +174,11 @@ int jetParticleFromHFShower(T const& jet, U const& particles, typename U::iterat
  */
 
 template <typename T, typename U, typename V>
-int mcdJetFromHFShower(T const& jet, U const& tracks, V const& particles, float dRMax = 0.25)
+int mcdJetFromHFShower(T const& jet, U const& tracks, V const& particles, float dRMax = 0.25, bool searchUpToQuark = false)
 {
 
   typename U::iterator hftrack;
-  int origin = jetTrackFromHFShower(jet, tracks, particles, hftrack);
+  int origin = jetTrackFromHFShower(jet, tracks, particles, hftrack, searchUpToQuark);
   if (origin == JetTaggingSpecies::charm || origin == JetTaggingSpecies::beauty) {
     if (!hftrack.has_mcParticle()) {
       return JetTaggingSpecies::none;
@@ -208,12 +214,12 @@ int mcdJetFromHFShower(T const& jet, U const& tracks, V const& particles, float 
  * @param dRMax maximum distance in eta-phi of initiating heavy-flavour quark from the jet axis
  */
 
-template <typename T, typename U, typename V>
-int mcpJetFromHFShower(T const& jet, U const& particles, float dRMax = 0.25)
+template <typename T, typename U>
+int mcpJetFromHFShower(T const& jet, U const& particles, float dRMax = 0.25, bool searchUpToQuark = false)
 {
 
   typename U::iterator hfparticle;
-  int origin = jetParticleFromHFShower(jet, particles, hfparticle);
+  int origin = jetParticleFromHFShower(jet, particles, hfparticle, searchUpToQuark);
   if (origin == JetTaggingSpecies::charm || origin == JetTaggingSpecies::beauty) {
 
     int originalHFMotherIndex = getOriginalHFMotherIndex<U>(hfparticle);
@@ -278,6 +284,46 @@ int jetOrigin(T const& jet, U const& particles, float dRMax = 0.25)
 }
 
 /**
+ * return the jet flavor: 0 for lf-jet, 1 for c-jet, 2 for b-jet
+ *
+ * @param AnyJet the jet that we need to study its flavor
+ * @param AllMCParticles a vector of all the mc particles stack
+ */
+template <typename AnyJet, typename AllMCParticles>
+int16_t getJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
+{
+  const int arraySize = 99;
+
+  std::array<int, arraySize> countpartcode;
+  int count = 0;
+
+  for (auto& mcpart : mcparticles) {
+    int pdgcode = mcpart.pdgCode();
+    if (TMath::Abs(pdgcode) == 21 || (TMath::Abs(pdgcode) >= 1 && TMath::Abs(pdgcode) <= 5)) {
+      double dR = jetutilities::deltaR(jet, mcpart);
+
+      if (dR < jet.r() / 100.f) {
+        if (TMath::Abs(pdgcode) == 5) {
+          return 2; // Beauty jet
+        } else {
+          if (count > arraySize - 1)
+            return 0;
+          countpartcode[count] = pdgcode;
+          count++;
+        }
+      }
+    }
+  }
+
+  for (int ij = 0; ij < count; ij++) {
+    if (TMath::Abs(countpartcode[ij]) == 4)
+      return 1; // Charm jet
+  }
+
+  return 0; // Light flavor jet
+}
+
+/**
  * return geometric sign which is calculated scalar product between jet axis with DCA (track propagated to PV )
  * positive and negative value are expected from primary vertex
  * positive value is expected from secondary vertex
@@ -299,12 +345,140 @@ int getGeoSign(T const& collision, U const& jet, V const& track)
   return sign;
 }
 
-void calculateDcaXYZ(float& dcaXYZ, float& sigmaDcaXYZ2, float dcaXY, float dcaZ, float cYY, float cZY, float cZZ, float sigmaDcaXY2, float sigmaDcaZ2)
+/**
+ * Orders the tracks associated with a jet based on signed impact parameter significance and stores them
+ * in a vector in descending order.
+ */
+template <typename T, typename U, typename V, typename W, typename Vec = std::vector<float>>
+void orderForIPJetTracks(T const& collision, U const& jet, V const& /*jtracks*/, W const& /*tracks*/, Vec& vecSignImpSig)
 {
-  dcaXYZ = std::sqrt(dcaXY * dcaXY + dcaZ * dcaZ);
-  float dFdxy = 2 * dcaXY / dcaXYZ;
-  float dFdz = 2 * dcaZ / dcaXYZ;
-  sigmaDcaXYZ2 = std::abs(cYY * dFdxy * dFdxy + cZZ * dFdz * dFdz + 2 * cZY * dFdxy * dFdz);
+  for (auto& jtrack : jet.template tracks_as<V>()) {
+    auto track = jtrack.template track_as<W>();
+    auto geoSign = getGeoSign(collision, jet, track);
+    auto varSignImpXYSig = geoSign * TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
+    vecSignImpSig.push_back(varSignImpXYSig);
+  }
+  std::sort(vecSignImpSig.begin(), vecSignImpSig.end(), std::greater<float>());
+}
+
+/**
+ * Checks if a jet is greater than the given tagging working point based on the signed impact parameter significances
+ */
+template <typename T, typename U, typename V, typename W, typename X, typename Y>
+bool isGreaterThanTaggingPoint(T const& collision, U const& jet, V const& jtracks, W const& tracks, X const& taggingPoint = 1.0, Y const& cnt = 1)
+{
+  if (cnt == 0) {
+    return true; // untagged
+  }
+  std::vector<float> vecSignImpSig;
+  orderForIPJetTracks(collision, jet, jtracks, tracks, vecSignImpSig);
+  if (vecSignImpSig.size() > static_cast<std::vector<float>::size_type>(cnt) - 1) {
+    for (int i = 0; i < cnt; i++) {
+      if (vecSignImpSig[i] < taggingPoint) { // tagger point set
+        return false;
+      }
+    }
+  } else {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Creates and sets the parameters of a resolution function (TF1) for constituents of jet based on signed impact parameter significnace in plane XY
+ * This function is typically used to set up a resolution function for jet tagging purposes.
+ *
+ * @param vecParams A vector containing the parameters for the resolution function.
+ * @return A unique pointer to the TF1 resolution function with the parameters set.
+ */
+template <typename T>
+std::unique_ptr<TF1> setResolutionFunction(T const& vecParams)
+{
+  std::unique_ptr<TF1> fResoFunc(new TF1("fResoFunc", "gaus(0)+expo(3)+expo(5)+expo(7)", -40, 0));
+  for (typename T::size_type i = 0; i < vecParams.size(); i++) {
+    fResoFunc->SetParameter(i, vecParams[i]);
+  }
+
+  return fResoFunc;
+}
+
+/**
+ * Calculates the probability of a given track being associated with a jet, based on the geometric
+ * sign and the resolution function of the jet's impact parameter significance. This probability
+ * helps in distinguishing between tracks likely originating from the primary vertex and those from
+ * secondary vertices, aiding in jet flavor tagging.
+ *
+ * @param fResoFuncjet The resolution function for the jet, used to model the distribution of impact
+ *                     parameter significances for tracks associated with the jet.
+ * @param track The track for which the probability is being calculated.
+ * @param minSignImpXYSig The minimum significance of the impact parameter in the XY plane, used as
+ *                        the lower limit for integration of the resolution function. Defaults to -40.
+ * @return The calculated probability of the track being associated with the jet, based on its
+ *         impact parameter significance.
+ */
+template <typename T, typename U>
+float getTrackProbability(T const& fResoFuncjet, U const& track, const float& minSignImpXYSig = -40)
+{
+  float probTrack = 0;
+  auto varSignImpXYSig = TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
+  if (-varSignImpXYSig < minSignImpXYSig)
+    varSignImpXYSig = -minSignImpXYSig - 0.01; // To avoid overflow for integral
+  probTrack = fResoFuncjet->Integral(minSignImpXYSig, -varSignImpXYSig) / fResoFuncjet->Integral(minSignImpXYSig, 0);
+
+  return probTrack;
+}
+
+/**
+ * Computes the jet probability (JP) for a given jet, considering only tracks with a positive geometric
+ * sign. JP is calculated using the product of individual track probabilities and the sum of logarithmic
+ * terms derived from these probabilities, providing a measure for the likelihood of the jet being
+ * associated with a particular flavor based on its constituent tracks' impact parameters.
+ *
+ * @param fResoFuncjet: The resolution function for the jet, applied to each track within the jet to
+ *                     assess its probability based on the impact parameter significance.
+ * @param collision: The collision event data, necessary for geometric sign calculations.
+ * @param jet: The jet for which the probability is being calculated.
+ * @param jtracks: Tracks in jets
+ * @param tracks: The original tracks to transform from jtracks.
+ * @param cnt: ordering number of impact parameter cnt=0: untagged, cnt=1: first, cnt=2: seconde, cnt=3: third.
+ * @param tagPoint: tagging working point which is selected by condiered efficiency and puriy
+ * @param minSignImpXYSig: To avoid over fitting
+ * @return The jet probability (JP), indicating the likelihood of the jet's association with a
+ *         specific flavor. Returns -1 if the jet contains fewer than two tracks with a positive
+ *         geometric sign.
+ */
+template <typename T, typename U, typename V, typename W, typename X>
+float getJetProbability(T const& fResoFuncjet, U const& collision, V const& jet, W const& jtracks, X const& tracks, const int& cnt, const float& tagPoint = 1.0, const float& minSignImpXYSig = -10)
+{
+  if (!(isGreaterThanTaggingPoint(collision, jet, jtracks, tracks, tagPoint, cnt)))
+    return -1;
+
+  std::vector<float> jetTracksPt;
+  float trackjetProb = 1.;
+
+  for (auto& jtrack : jet.template tracks_as<W>()) {
+    auto track = jtrack.template track_as<X>();
+
+    float probTrack = getTrackProbability(fResoFuncjet, track, minSignImpXYSig);
+
+    auto geoSign = getGeoSign(collision, jet, track);
+    if (geoSign > 0) { // only take positive sign track for JP calculation
+      trackjetProb *= probTrack;
+      jetTracksPt.push_back(track.pt());
+    }
+  }
+
+  float JP = -1.;
+  if (jetTracksPt.size() < 2)
+    return -1;
+
+  float sumjetProb = 0.;
+  for (std::vector<float>::size_type i = 0; i < jetTracksPt.size(); i++) {
+    sumjetProb += (TMath::Power(-1 * TMath::Log(trackjetProb), static_cast<int>(i)) / TMath::Factorial(i));
+  }
+
+  JP = trackjetProb * sumjetProb;
+  return JP;
 }
 
 }; // namespace jettaggingutilities

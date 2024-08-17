@@ -46,13 +46,12 @@ namespace identifiedbffilter
 /// \enum MatchRecoGenSpecies
 /// \brief The species considered by the matching test
 enum MatchRecoGenSpecies {
-  kIdBfCharged = 0, ///< charged particle/track
-  kIdBfElectron,    ///< electron
-  kIdBfMuon,        ///< muon
-  kIdBfPion,        ///< pion
-  kIdBfKaon,        ///< kaon
-  kIdBfProton,      ///< proton
-  kIdBfNoOfSpecies, ///< the number of considered species
+  kIdBfElectron = 0, ///< electron
+  kIdBfPion,         ///< pion
+  kIdBfKaon,         ///< kaon
+  kIdBfProton,       ///< proton
+  kIdBfNoOfSpecies,  ///< the number of considered species
+  kIdBfCharged = 4,
   kWrongSpecies = -1
 };
 
@@ -76,17 +75,15 @@ enum SpeciesPairMatch {
   kIdBfProtonProton      ///< Proton-Proton
 };
 
-const char* speciesName[kIdBfNoOfSpecies] = {"h", "e", "mu", "pi", "ka", "p"};
+const char* speciesName[kIdBfNoOfSpecies] = {"e", "pi", "ka", "p"};
 
-const char* speciesTitle[kIdBfNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"};
+const char* speciesTitle[kIdBfNoOfSpecies] = {"e", "#pi", "K", "p"};
 
 const int speciesChargeValue1[kIdBfNoOfSpecies] = {
-  0, //<Unidentified hadron
-  2, //< electron
-  4, //< muon
-  6, //< pion
-  8, //< Kaon
-  10 //< proton
+  0, //< electron
+  2, //< pion
+  4, //< Kaon
+  6  //< proton
 };
 
 /// \enum SystemType
@@ -156,8 +153,6 @@ std::vector<TrackSelection*> trackFilters = {};
 bool dca2Dcut = false;
 float maxDCAz = 1e6f;
 float maxDCAxy = 1e6f;
-
-float minPIDSigma = 3.0;
 
 inline void initializeTrackSelection()
 {
@@ -611,6 +606,7 @@ inline bool centralitySelection(CollisionObject const&, float&)
 template <>
 inline bool centralitySelection<aod::CollisionEvSelCent>(aod::CollisionEvSelCent const& collision, float& centmult)
 {
+
   return centralitySelectionMult(collision, centmult);
 }
 
@@ -618,6 +614,7 @@ inline bool centralitySelection<aod::CollisionEvSelCent>(aod::CollisionEvSelCent
 template <>
 inline bool centralitySelection<aod::CollisionEvSelRun2Cent>(aod::CollisionEvSelRun2Cent const& collision, float& centmult)
 {
+
   return centralitySelectionMult(collision, centmult);
 }
 
@@ -625,6 +622,7 @@ inline bool centralitySelection<aod::CollisionEvSelRun2Cent>(aod::CollisionEvSel
 template <>
 inline bool centralitySelection<aod::CollisionEvSel>(aod::CollisionEvSel const& collision, float& centmult)
 {
+
   return centralitySelectionNoMult(collision, centmult);
 }
 
@@ -632,6 +630,7 @@ inline bool centralitySelection<aod::CollisionEvSel>(aod::CollisionEvSel const& 
 template <>
 inline bool centralitySelection<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator const& collision, float& centmult)
 {
+
   return centralitySelectionNoMult(collision, centmult);
 }
 
@@ -639,6 +638,7 @@ inline bool centralitySelection<soa::Join<aod::CollisionsEvSel, aod::McCollision
 template <>
 inline bool centralitySelection<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator const& collision, float& centmult)
 {
+
   return centralitySelectionMult(collision, centmult);
 }
 
@@ -676,7 +676,6 @@ inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
   }
 
   bool centmultsel = centralitySelection(collision, centormult);
-
   return trigsel && zvtxsel && centmultsel;
 }
 
