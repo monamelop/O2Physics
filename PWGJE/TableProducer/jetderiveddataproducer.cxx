@@ -146,7 +146,7 @@ struct JetDerivedDataProducerTask {
     if (includeTriggers) {
       auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
       triggerDecider.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), jetderiveddatautilities::JTriggerMasks);
-      triggerBit = jetderiveddatautilities::setTriggerSelectionBit(triggerDecider.getTriggerOfInterestResults());
+      triggerBit = jetderiveddatautilities::setTriggerSelectionBit(triggerDecider.getTriggerOfInterestResults(bc.globalBC()));
     }
     jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centFT0C(), collision.trackOccupancyInTimeRange(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit); // note change multFT0C to multFT0M when problems with multFT0A are fixed
     jCollisionsParentIndexTable(collision.globalIndex());
@@ -160,7 +160,7 @@ struct JetDerivedDataProducerTask {
     if (includeTriggers) {
       auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
       triggerDecider.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), jetderiveddatautilities::JTriggerMasks);
-      triggerBit = jetderiveddatautilities::setTriggerSelectionBit(triggerDecider.getTriggerOfInterestResults());
+      triggerBit = jetderiveddatautilities::setTriggerSelectionBit(triggerDecider.getTriggerOfInterestResults(bc.globalBC()));
     }
     jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit);
     jCollisionsParentIndexTable(collision.globalIndex());
@@ -259,16 +259,17 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcTrackLabels, "produces derived track labels table", false);
 
-  void processMcTrackLabelsWithCollisionAssociator(aod::Collision const& collision, soa::Join<aod::Tracks, aod::McTrackLabels> const&, aod::TrackAssoc const& assocCollisions)
+  void processMcTrackLabelsWithCollisionAssociator(aod::Collisions const& collisions, soa::Join<aod::Tracks, aod::McTrackLabels> const&, aod::TrackAssoc const& assocCollisions)
   {
-
-    auto collisionTrackIndices = assocCollisions.sliceBy(perCollisionTrackIndices, collision.globalIndex());
-    for (auto const& collisionTrackIndex : collisionTrackIndices) {
-      auto track = collisionTrackIndex.track_as<soa::Join<aod::Tracks, aod::McTrackLabels>>();
-      if (track.collisionId() == collision.globalIndex() && track.has_mcParticle()) {
-        jMcTracksLabelTable(track.mcParticleId());
-      } else {
-        jMcTracksLabelTable(-1);
+    for (auto const& collision : collisions) {
+      auto collisionTrackIndices = assocCollisions.sliceBy(perCollisionTrackIndices, collision.globalIndex());
+      for (auto const& collisionTrackIndex : collisionTrackIndices) {
+        auto track = collisionTrackIndex.track_as<soa::Join<aod::Tracks, aod::McTrackLabels>>();
+        if (track.collisionId() == collision.globalIndex() && track.has_mcParticle()) {
+          jMcTracksLabelTable(track.mcParticleId());
+        } else {
+          jMcTracksLabelTable(-1);
+        }
       }
     }
   }
