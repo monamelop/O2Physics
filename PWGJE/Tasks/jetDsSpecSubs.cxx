@@ -16,7 +16,6 @@
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
@@ -25,7 +24,6 @@
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -84,12 +82,10 @@ struct JetDsSpecSubs {
   using DsMCDJets = soa::Join<aod::DsChargedMCDetectorLevelJets, aod::DsChargedMCDetectorLevelJetConstituents, aod::DsChargedMCDetectorLevelJetsMatchedToDsChargedMCParticleLevelJets>;
   using DsMCPJets = soa::Join<aod::DsChargedMCParticleLevelJets, aod::DsChargedMCParticleLevelJetConstituents, aod::DsChargedMCDetectorLevelJetsMatchedToDsChargedMCParticleLevelJets>;
 
-
   // Slices for access to proper HF MCD jet collision that is associated to MCCollision
   PresliceUnsorted<aod::JetCollisionsMCD> collisionsPerMCCollisionPreslice = aod::jmccollisionlb::mcCollisionId;
   Preslice<DsMCDJets> dsMCDJetsPerEXPCollisionPreslice = aod::jet::collisionId;
   Preslice<DsMCPJets> dsMCPJetsPerMCCollisionPreslice = aod::jet::mcCollisionId;
-
 
   // Configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
@@ -417,7 +413,6 @@ struct JetDsSpecSubs {
       // MC collisions passing z_cut selection
       registry.fill(HIST("McEffCol"), getValFromBin(BinMCColCntr::ZCut));
 
-
       // Reconstructed collisions associated to this mccollision
       const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mccollision.globalIndex());
       for (const auto& collision : collisionsPerMCCollision) {
@@ -559,7 +554,6 @@ struct JetDsSpecSubs {
                                                  mcpDscand,
                                                  jettracks,
                                                  particles);
-
   }
   PROCESS_SWITCH(JetDsSpecSubs, processMonteCarloEfficiencyDs, "Non-matched and matched MC Ds and jets", false);
 };
