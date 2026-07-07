@@ -228,9 +228,9 @@ struct JetDsSpecSubs {
       const float dr = jetutilities::deltaR(jet, trk);
       sum += std::pow(trk.pt(), kappa) * std::pow(dr, alpha);
     }
-    const float jetR = jet.r() / 100.f;
+    const float jetRadius = jet.r() / 100.f;
 
-    const float denom = std::pow(jet.pt(), kappa) * std::pow(jetR, alpha);
+    const float denom = std::pow(jet.pt(), kappa) * std::pow(jetRadius, alpha);
     if (denom <= 0.f) {
       return -1.f;
     }
@@ -310,6 +310,11 @@ struct JetDsSpecSubs {
     registry.fill(HIST("h_collision_counter_data"), 3.0);
 
     for (const auto& jet : jets) {
+      const float jetRadius = jet.r() / 100.f;
+
+      if (std::abs(jetRadius - jetR.value) > 1e-6) {
+        continue;
+      }
       registry.fill(HIST("h_dsjet_counter_data"), 0.5); // DsChargedJets entries
 
       registry.fill(HIST("h_jet_pt_data"), jet.pt());
@@ -399,8 +404,7 @@ struct JetDsSpecSubs {
                                    DsMCPJets const& mcpjets,
                                    DsCandidatesMCD const& /*mcdCandidates*/,
                                    DsCandidatesMCP const& /*mcpCandidates*/,
-                                   aod::JetTracks const& tracks,
-                                   aod::JetParticles const& particles)
+                                   aod::JetTracks const& tracks)
   {
     for (const auto& mccollision : mccollisions) {
       // Count all generated MC collisions
@@ -413,7 +417,7 @@ struct JetDsSpecSubs {
       // MC collisions passing z_cut selection
       registry.fill(HIST("McEffCol"), getValFromBin(BinMCColCntr::ZCut));
 
-      // Detector level
+      // Reconstructed collisions associated to this mccollision
       const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mccollision.globalIndex());
       for (const auto& collision : collisionsPerMCCollision) {
 
@@ -431,7 +435,11 @@ struct JetDsSpecSubs {
         // Detector-level Ds-tagged jets associated with the current reconstructed collision
         const auto dsmcdJetsPerCollision = mcdjets.sliceBy(jetmcdpreslice, collision.globalIndex());
         for (const auto& mcdjet : dsmcdJetsPerCollision) {
-
+          
+          const float jetRadius = jet.r() / 100.f;
+          if (std::abs(jetRadius - jetR.value) > 1e-6) {
+              continue;
+          }
           // Detector-level jet found in a matched collision
           registry.fill(HIST("McEffJet"), getValFromBin(BinMCJetCntr::DetectorLevelJetInMCCollision));
 
@@ -486,6 +494,11 @@ struct JetDsSpecSubs {
       // Particle level
       const auto dsmcpJetsPerMCCollision = mcpjets.sliceBy(jetmcppreslice, mccollision.globalIndex());
       for (const auto& mcpjet : dsmcpJetsPerMCCollision) {
+        
+        const float jetRadius = jet.r() / 100.f;
+        if (std::abs(jetRadius - jetR.value) > 1e-6) {
+            continue;
+        }
 
         registry.fill(HIST("McEffJet"), getValFromBin(BinMCJetCntr::ParticleLevelJetInMCCollision));
 
@@ -536,8 +549,7 @@ struct JetDsSpecSubs {
                                      DsMCPJets const& mcpjets,
                                      DsCandidatesMCD const& mcdDscand,
                                      DsCandidatesMCP const& mcpDscand,
-                                     aod::JetTracks const& jettracks,
-                                     aod::JetParticles const& particles)
+                                     aod::JetTracks const& jettracks)
   {
     analyseMonteCarloEfficiency<Preslice<DsMCDJets>,
                                 Preslice<DsMCPJets>,
@@ -552,8 +564,7 @@ struct JetDsSpecSubs {
                                                  mcpjets,
                                                  mcdDscand,
                                                  mcpDscand,
-                                                 jettracks,
-                                                 particles);
+                                                 jettracks);
   }
   PROCESS_SWITCH(JetDsSpecSubs, processMonteCarloEfficiencyDs, "Non-matched and matched MC Ds and jets", false);
 };
