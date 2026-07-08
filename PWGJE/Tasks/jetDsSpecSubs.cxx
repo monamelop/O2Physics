@@ -435,10 +435,10 @@ struct JetDsSpecSubs {
         // Detector-level Ds-tagged jets associated with the current reconstructed collision
         const auto dsmcdJetsPerCollision = mcdjets.sliceBy(jetmcdpreslice, collision.globalIndex());
         for (const auto& mcdjet : dsmcdJetsPerCollision) {
-          
+
           const float jetRadius = jet.r() / 100.f;
           if (std::abs(jetRadius - jetR.value) > 1e-6) {
-              continue;
+            continue;
           }
           // Detector-level jet found in a matched collision
           registry.fill(HIST("McEffJet"), getValFromBin(BinMCJetCntr::DetectorLevelJetInMCCollision));
@@ -494,10 +494,10 @@ struct JetDsSpecSubs {
       // Particle level
       const auto dsmcpJetsPerMCCollision = mcpjets.sliceBy(jetmcppreslice, mccollision.globalIndex());
       for (const auto& mcpjet : dsmcpJetsPerMCCollision) {
-        
+
         const float jetRadius = jet.r() / 100.f;
         if (std::abs(jetRadius - jetR.value) > 1e-6) {
-            continue;
+          continue;
         }
 
         registry.fill(HIST("McEffJet"), getValFromBin(BinMCJetCntr::ParticleLevelJetInMCCollision));
